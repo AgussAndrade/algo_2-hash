@@ -5,13 +5,14 @@
 #include <limits.h>
 #include <stdlib.h>
 
-#define LARGO_I 31
+#define LARGO_I 37
+
 typedef enum {vacio,ocupado,borrado} estado_t;
 
 typedef struct campo{
 	const char* clave;
 	void* valor;
-	estado_t estado; //false ocupado, true borrado. Si esta vacio es porque no hay campo por ende tampoco estado xdxdxd LOLARDO
+	estado_t estado;
 } campo_t;
 
 struct hash{
@@ -43,9 +44,11 @@ bool hash_redimensionar (hash_t* hash){
 		
 		if(aux[i].estado == ocupado){
 			hash_guardar(hash,aux[i].clave,aux[i].valor);
+		}
 	}
 	free(aux);
 	return true;
+
 }
 
 int hashing (const char* word)
@@ -79,7 +82,7 @@ int hash_buscar(const hash_t* hash,const char* clave){
 			break;
 		}
 	}
-	return -1;
+	return -1; //es imposible que devuelva -1 por el tema de que nunca se llena pero sin esto no compila
 }
 
 hash_t *hash_crear(hash_destruir_dato_t destruir_dato){
@@ -144,5 +147,8 @@ bool hash_pertenece(const hash_t *hash, const char *clave){
 		return true;
 	}
 	return false;
-} // ERROR
+}
 
+// size_t hash_cantidad(const hash_t *hash){
+
+// }
