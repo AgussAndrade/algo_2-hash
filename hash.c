@@ -88,7 +88,7 @@ hash_t *hash_crear(hash_destruir_dato_t destruir_dato){
 	
 	hash->capacidad = LARGO_I;
 	hash->cantidad = 0;
-	hash->destruir = destruir_dato;
+	hash->destruir = destruir_dato; //ERROR
 	
 	campo_t* arreglo = malloc(sizeof(campo_t)*LARGO_I);
 	
@@ -109,17 +109,17 @@ bool hash_guardar( hash_t *hash, const char *clave, void *dato){
 	if((hash->cantidad + 1) *10 / hash->capacidad >= 7){
 		if(!hash_redimensionar(hash)) return false;
 	}
-	
-	int pos = hash_buscar(const hash,clave);
+	const hash_t* A = hash;
+	int pos = hash_buscar(A,clave);
 
 	if(hash->arr[pos].estado == vacio ){
 //		campo_t* campo = malloc(sizeof(campo_t));
 		hash->arr[pos].clave = clave;
-		hash->arr[pos].dato = dato;
+		hash->arr[pos].valor = dato;
 		hash->arr[pos].estado = ocupado;
 	}
 	else{
-		hash->destruir(hash->arr[pos].valor);
+		hash->destruir(hash->arr[pos].valor); //ERROR
 		hash->arr[pos].valor = dato;
 		hash->arr[pos].estado = ocupado;
 	}
@@ -144,5 +144,5 @@ bool hash_pertenece(const hash_t *hash, const char *clave){
 		return true;
 	}
 	return false;
-}
+} // ERROR
 
