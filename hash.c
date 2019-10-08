@@ -18,14 +18,14 @@ typedef struct campo{
 struct hash{
 	size_t capacidad;
 	size_t cantidad;
-	hash_destruir_dato_t* destruir;
+	hash_destruir_dato_t destruir;
 	campo_t* arr;
 };
 
 struct hash_iter{
 	hash_t* hash;
 	campo_t* act;
-	size_t pos; //posicion de donde estoy, si estoy en > a capacidad me pase y termine de iterar 
+	size_t pos; //posicion de donde estoy, si estoy en == a capacidad me pase y termine de iterar 
 };
 
 bool hash_redimensionar (hash_t* hash){
@@ -91,7 +91,7 @@ hash_t *hash_crear(hash_destruir_dato_t destruir_dato){
 	
 	hash->capacidad = LARGO_I;
 	hash->cantidad = 0;
-	hash->destruir = destruir_dato; //ERROR
+	hash->destruir = destruir_dato;
 	
 	campo_t* arreglo = malloc(sizeof(campo_t)*LARGO_I);
 	
@@ -102,6 +102,7 @@ hash_t *hash_crear(hash_destruir_dato_t destruir_dato){
 	
 	for(int i = 0 ; i < LARGO_I;i++){
 		arreglo[i].estado = vacio;
+		arreglo[i].valor = NULL;
 	}
 	
 	hash->arr = arreglo;
@@ -114,15 +115,20 @@ bool hash_guardar( hash_t *hash, const char *clave, void *dato){
 	}
 	const hash_t* A = hash;
 	int pos = hash_buscar(A,clave);
+	// if (posicion == -1){
+	// 	return false;
+	// } 
 
 	if(hash->arr[pos].estado == vacio ){
-//		campo_t* campo = malloc(sizeof(campo_t));
 		hash->arr[pos].clave = clave;
 		hash->arr[pos].valor = dato;
 		hash->arr[pos].estado = ocupado;
 	}
-	else{
-		hash->destruir(hash->arr[pos].valor); //ERROR
+	else{ 
+/* hash buscar mira solo por clave, si borraste una clave y la queres volver a guardar tambien sirve */
+		if(hash->destruir != NULL){
+			hash->destruir(hash->arr[pos].valor); 
+		}
 		hash->arr[pos].valor = dato;
 		hash->arr[pos].estado = ocupado;
 	}
@@ -132,10 +138,7 @@ bool hash_guardar( hash_t *hash, const char *clave, void *dato){
 
 void *hash_obtener(const hash_t *hash, const char *clave){
 	int pos = hash_buscar(hash,clave);
-	if(hash->arr[pos].estado == vacio){
-		return NULL;
-	}
-	else if (hash->arr[pos].estado == borrado){
+	if(hash->arr[pos].estado != ocupado){
 		return NULL;
 	}
 	return hash->arr[pos].valor;
@@ -149,6 +152,30 @@ bool hash_pertenece(const hash_t *hash, const char *clave){
 	return false;
 }
 
-// size_t hash_cantidad(const hash_t *hash){
+size_t hash_cantidad(const hash_t *hash){
+	return hash->cantidad;
+}
 
-// }
+void *hash_borrar(hash_t *hash, const char *clave){
+	int pos = hashing(clave);
+	if (hash->arr[pos].estado != ocupado){
+		return NULL;
+	}
+	hash->arr[pos].estado = borrado;
+	void* rta = hash->arr[pos].valor;
+	hash->arr[pos].valor = NULL;
+	hash->cantidad --;
+	return rta;
+}
+void hash_destruir(hash_t *hash){
+	campo_t* arreglo = hash->arr;
+	if(hash->destruir != NULL){
+		for(int i =0; i<hash->capacidad;i++){
+			if (arreglo[i].estado == ocupado){
+				hash->destruir(arreglo[i].valor);
+			}
+		}
+	}
+	free(arreglo);
+	free(hash);
+}
