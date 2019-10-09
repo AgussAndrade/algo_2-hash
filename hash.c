@@ -204,7 +204,7 @@ bool hash_iter_avanzar(hash_iter_t* iter){
 	bool iterar = true;
 	size_t pos = iter->pos;
 	while(iter->hash->arr[pos +1].estado != ocupado && iterar == true){
-		if(iter->hash->cantidad == 0 || hash_iter_al_final(iter->hash)){
+		if(iter->hash->cantidad == 0 || hash_iter_al_final(iter)){
 		iterar = false;
 		}
 		else{
@@ -220,7 +220,7 @@ bool hash_iter_avanzar(hash_iter_t* iter){
 
 // Devuelve clave actual, esa clave no se puede modificar ni liberar.
 const char* hash_iter_ver_actual(const hash_iter_t* iter){
-	if(hash_iter_al_final(iter->hash)){
+	if(hash_iter_al_final(iter)){
 		return NULL;
 	}
 	return iter->hash->arr[iter->pos].clave;
