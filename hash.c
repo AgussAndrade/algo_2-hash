@@ -1,10 +1,25 @@
 #include "hash.h"
 #include "testing.h"
+#undef get16bits
+
+#if (defined(__GNUC__) && defined(__i386__)) || defined(__WATCOMC__) \
+  || defined(_MSC_VER) || defined (__BORLANDC__) || defined (__TURBOC__)
+#define get16bits(d) (*((const uint16_t *) (d)))
+#endif
+
+#if !defined (get16bits)
+#define get16bits(d) ((((uint32_t)(((const uint8_t *)(d))[1])) << 8)\
+                       +(uint32_t)(((const uint8_t *)(d))[0]) )
+#endif // cosas del hash 
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <limits.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
+#include <string.h>
+
 #define LARGO_I 37
 
 typedef enum {vacio,ocupado,borrado} estado_t;
@@ -27,6 +42,56 @@ struct hash_iter{
 	campo_t* act;
 	size_t pos; //posicion de donde estoy, si estoy en == a capacidad me pase y termine de iterar 
 };
+
+
+
+uint32_t hashing (const char * data, int len) {
+uint32_t hash = len, tmp;
+int rem;
+
+    if (len <= 0 || data == NULL) return 0;
+
+    rem = len & 3;
+    len >>= 2;
+
+    /* Main loop */
+    for (;len > 0; len--) {
+        hash  += get16bits (data);
+        tmp    = (get16bits (data+2) << 11) ^ hash;
+        hash   = (hash << 16) ^ tmp;
+        data  += 2*sizeof (uint16_t);
+        hash  += hash >> 11;
+    }
+
+    /* Handle end cases */
+    switch (rem) {
+        case 3: hash += get16bits (data);
+                hash ^= hash << 16;
+                hash ^= ((signed char)data[sizeof (uint16_t)]) << 18;
+                hash += hash >> 11;
+                break;
+        case 2: hash += get16bits (data);
+                hash ^= hash << 11;
+                hash += hash >> 17;
+                break;
+        case 1: hash += (signed char)*data;
+                hash ^= hash << 10;
+                hash += hash >> 1;
+    }
+
+    /* Force "avalanching" of final 127 bits */
+    hash ^= hash << 3;
+    hash += hash >> 5;
+    hash ^= hash << 4;
+    hash += hash >> 17;
+    hash ^= hash << 25;
+    hash += hash >> 6;
+
+    return hash;
+}
+
+
+
 
 void destruir_arr(campo_t** arr, size_t largo){
 	int i ;
@@ -72,18 +137,18 @@ bool hash_redimensionar (hash_t* hash,size_t tam){
 
 }
 
-int hashing (const char* word)
-{
-    unsigned int hash = 0;
-    for (int i = 0 ; word[i] != '\0' ; i++)
-    {
-        hash = 37*hash + word[i];
-    }
-    return hash;
-}
+// int hashing (const char* word)
+// {
+//     unsigned int hash = 0;
+//     for (int i = 0 ; word[i] != '\0' ; i++)
+//     {
+//         hash = 37*hash + word[i];
+//     }
+//     return hash;
+// }
 
 size_t hash_buscar(const hash_t* hash,const char* clave){
-	size_t pos = (size_t)hashing(clave) % hash->capacidad;
+	size_t pos = (size_t)hashing(clave,strlen(clave)) % hash->capacidad;
 	size_t i = pos;
 	while (true){
 		// printf("%i %i %i\n",i,pos, hash->capacidad );
@@ -219,7 +284,7 @@ hash_iter_t* hash_iter_crear(const hash_t* hash){
 	size_t pos = 0;
 	iter->hash = hash;
 	if(hash->cantidad == 0){
-		iter->pos = 0;
+		iter->pos = hash->capacidad;
 	}
 	else{
 		while(hash->arr[pos]->estado != ocupado){
@@ -232,24 +297,24 @@ hash_iter_t* hash_iter_crear(const hash_t* hash){
 
 // Avanza iterador
 bool hash_iter_avanzar(hash_iter_t* iter){
-	bool iterar = true;
-	size_t pos = iter->pos;
-	while(iter->hash->arr[pos +1]->estado != ocupado && iterar == true){
-		if(iter->hash->cantidad == 0 || hash_iter_al_final(iter)){
-		iterar = false;
+	size_t pos = iter->pos + 1;
+	if (hash_iter_al_final(iter)) return false;
+
+	while( pos < iter->hash->capacidad){
+		
+		if( iter->hash->arr[pos]->estado == ocupado){
+			iter->pos = pos;
+			return true;
 		}
+		
 		else{
 			pos++;
 		}
 	}
-	if (iterar == true){
-		iter->pos = pos;
-		return true;
-	}
+	iter->pos = pos;
 	return false;
 }
 
-// Devuelve clave actual, esa clave no se puede modificar ni liberar->
 const char* hash_iter_ver_actual(const hash_iter_t* iter){
 	if(hash_iter_al_final(iter)){
 		return NULL;
@@ -259,7 +324,7 @@ const char* hash_iter_ver_actual(const hash_iter_t* iter){
 
 // Comprueba si terminó la iteración
 bool hash_iter_al_final(const hash_iter_t* iter){
-	if (iter->pos >= iter->hash->capacidad){
+	if (iter->pos >= iter->hash->capacidad || iter->hash->cantidad == 0){
 		return true;
 	}
 	return false;
