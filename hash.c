@@ -90,7 +90,7 @@ int rem;
     return hash;
 }
 
-
+//XDXDXD
 
 
 void destruir_arr(campo_t** arr, size_t largo){
