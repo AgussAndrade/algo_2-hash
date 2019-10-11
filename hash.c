@@ -43,24 +43,18 @@ struct hash_iter{
 	size_t pos; //posicion de donde estoy, si estoy en == a capacidad me pase y termine de iterar 
 };
 
-char *substr(const char *str, size_t n){
-	size_t j;
-	int a = strlen(str);
-	if (a < n){
-		j= a;
-	}
-	else{
-		j=n;
-	}
+char *copiar_cadena(const char *str){
+	size_t j = strlen(str);
+
 	char* nueva_cadena = malloc(sizeof(char) * (j+1));
 	if (nueva_cadena == NULL){
 		return NULL;
 	}
-	if(n == 0 || strcmp(str,"") == 0){
+	if( strcmp(str,"") == 0){
 		nueva_cadena[0] = '\0';
 		return nueva_cadena;
 	}
-	strncpy(nueva_cadena,str,j);
+	strcpy(nueva_cadena,str);
 	nueva_cadena[j]= '\0';
 	return nueva_cadena;
 }
@@ -115,8 +109,10 @@ int rem;
 void destruir_arr(campo_t** arr, size_t largo){
 	int i ;
 	for(i =0;i < (int)largo;i++){
-		free(arr[i]);
+		void* campo = (void*)arr[i];
+		free(campo);
 	}
+
 	free(arr);
 }
 
@@ -130,6 +126,7 @@ bool pedir_campos(campo_t** arreglo,size_t tam){
 		arreglo[i] = aux;
 		arreglo[i]->estado = vacio;
 		arreglo[i]->valor = NULL;
+		arreglo[i]->clave = NULL;
 	}
 	return true;
 }
@@ -149,11 +146,12 @@ bool hash_redimensionar (hash_t* hash,size_t tam){
 		
 		if(aux[i]->estado == ocupado){
 			hash_guardar(hash,aux[i]->clave,aux[i]->valor);
+			char* a_liberar = (char*)aux[i]->clave;
+			// printf("%s\n","libero en hash_redimensionar" );
+			free(a_liberar);
 		}
-		if(aux[i]->estado != vacio){
-			free((void*)aux[i]->clave);
-		}
-		free(aux[i]);
+		void* campo = (void*)aux[i];
+		free(campo);
 	}
 	free(aux);
 	return true;
@@ -166,10 +164,10 @@ size_t hash_buscar(const hash_t* hash,const char* clave){
 	while (true){
 		// printf("%i %i %i\n",i,pos, hash->capacidad );
 		if(hash->arr[i]->estado == vacio){
-			return i;
+			break;
 		}
-		else if (strcmp(hash->arr[i]->clave, clave) == 0){
-			return i;
+		else if (hash->arr[i]->estado == ocupado && strcmp(hash->arr[i]->clave, clave) == 0){
+			break;
 		}
 		if( i == hash->capacidad - 1){
 			i = 0;
@@ -180,7 +178,7 @@ size_t hash_buscar(const hash_t* hash,const char* clave){
 			break;
 		}
 	}
-	return pos; //es imposible que devuelva esto por el tema de que nunca se llena pero sin esto no compila
+	return i; //es imposible que devuelva esto por el tema de que nunca se llena pero sin esto no compila
 }
 
 hash_t *hash_crear(hash_destruir_dato_t destruir_dato){
@@ -211,20 +209,20 @@ bool hash_guardar( hash_t *hash, const char *clave, void *dato){
 	size_t pos = hash_buscar(A,clave);
 
 	if(hash->arr[pos]->estado == vacio ){
-		hash->arr[pos]->clave = substr(clave,strlen(clave));
+		const char* cla_aux = copiar_cadena(clave);
+		if( cla_aux == NULL){
+			return NULL;
+		}
+		hash->arr[pos]->clave = cla_aux;
 		hash->arr[pos]->valor = dato;
 		hash->arr[pos]->estado = ocupado;
 		hash->cantidad++;
 	}
 	else{ 
-/* hash buscar mira solo por clave, si borraste una clave y la queres volver a guardar tambien sirve */
 		if(hash->destruir != NULL){
 			hash->destruir(hash->arr[pos]->valor); 
 		}
 		hash->arr[pos]->valor = dato;
-		if(hash->arr[pos]->estado == borrado){
-			hash->cantidad++;
-		}
 		hash->arr[pos]->estado = ocupado;
 	}
 	
@@ -263,38 +261,46 @@ void *hash_borrar(hash_t *hash, const char *clave){
 			return NULL;
 		}
 	}
-	
+	free((char*)hash->arr[pos]->clave);
+	hash->arr[pos]->clave = NULL;
 	hash->arr[pos]->estado = borrado;
 	void* rta = hash->arr[pos]->valor;
 	hash->arr[pos]->valor = NULL;
+	
 	if(hash->cantidad >0){
 		hash->cantidad --;
 	}
+	
 	return rta;
 }
 void hash_destruir(hash_t *hash){
 	campo_t** arreglo = hash->arr;
-	if(hash->destruir != NULL){
-		for(int i =0; i<hash->capacidad;i++){
-			if (arreglo[i]->estado == ocupado){
-				hash->destruir(arreglo[i]->valor);
-			}
 
-			if(arreglo[i]->estado != vacio)free((void*)arreglo[i]->clave);
-			free(arreglo[i]);
-		}
+	for(int i =0; i<hash->capacidad;i++){
+		if (arreglo[i]->estado == ocupado){
+			if(hash->destruir != NULL) hash->destruir(arreglo[i]->valor);
+			char* a_liberar = (char*)arreglo[i]->clave;
+			// printf("%s\n","libero en hash_destruir" );
+
+			free(a_liberar);
+		} 
+		void* campo = (void*)arreglo[i];
+		free(campo);
 	}
+
 	free(arreglo);
 	free(hash);
 }
 // Crea iterador
 hash_iter_t* hash_iter_crear(const hash_t* hash){
 	hash_iter_t* iter = malloc(sizeof(hash_iter_t));
+	
 	if (iter == NULL){
 		return NULL;
 	}
 	size_t pos = 0;
 	iter->hash = hash;
+	
 	if(hash->cantidad == 0){
 		iter->pos = hash->capacidad;
 	}
