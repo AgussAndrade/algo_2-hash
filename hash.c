@@ -1,5 +1,4 @@
 #include "hash.h"
-#include "testing.h"
 #undef get16bits
 
 #if (defined(__GNUC__) && defined(__i386__)) || defined(__WATCOMC__) \
@@ -20,7 +19,11 @@
 #include <stdint.h>
 #include <string.h>
 
+#define _POSIX_C_SOURCE
 #define LARGO_I 37
+#define MAX_C 7
+#define MIN_C 1 
+
 
 typedef enum {vacio,ocupado,borrado} estado_t;
 
@@ -33,13 +36,14 @@ typedef struct campo{
 struct hash{
 	size_t capacidad;
 	size_t cantidad;
-	hash_destruir_dato_t destruir;
+	size_t ocupado;
 	campo_t* arr;
+	hash_destruir_dato_t destruir;
 };
 
 struct hash_iter{
 	const hash_t* hash;
-	size_t pos; //posicion de donde estoy, si estoy en == a capacidad me pase y termine de iterar 
+	size_t pos;
 };
 
 char *copiar_cadena(const char *str){
@@ -59,9 +63,9 @@ char *copiar_cadena(const char *str){
 }
 
 
-uint32_t hashing (const char * data, int len) {
-uint32_t hash = len, tmp;
-int rem;
+size_t hashing (const char * data, size_t len) {
+size_t hash = len, tmp;
+size_t rem;
 
     if (len <= 0 || data == NULL) return 0;
 
@@ -106,32 +110,23 @@ int rem;
 
 
 
-bool pedir_campos(campo_t* arreglo,size_t tam){
-	for(int i = 0 ; i < tam;i++){
-		arreglo[i].estado = vacio;
-		arreglo[i].valor = NULL;
-		arreglo[i].clave = NULL;
-	}
-	return true;
-}
 bool hash_redimensionar (hash_t* hash,size_t tam){
-	campo_t* datos_nuevo = malloc(tam * sizeof(campo_t));
+	campo_t* datos_nuevo = calloc(3,tam * sizeof(campo_t));
 	if (datos_nuevo == NULL){
 		return false;
 	}
-	if(!pedir_campos(datos_nuevo,tam)) return false;
 
 	campo_t* aux = hash->arr;
 	hash->arr = datos_nuevo;
 	size_t j = hash->capacidad;
 	hash->capacidad = tam;
 	hash->cantidad = 0;
+	hash->ocupado = 0;
 	for(int i = 0; i < j;i++){
 		
 		if(aux[i].estado == ocupado){
 			hash_guardar(hash,aux[i].clave,aux[i].valor);
 			char* a_liberar = (char*)aux[i].clave;
-			// printf("%s\n","libero en hash_redimensionar" );
 			free(a_liberar);
 		}
 	}
@@ -141,7 +136,7 @@ bool hash_redimensionar (hash_t* hash,size_t tam){
 }
 
 size_t hash_buscar(const hash_t* hash,const char* clave){
-	size_t pos = (size_t)hashing(clave, (int)strlen(clave)) % hash->capacidad;
+	size_t pos = hashing(clave, strlen(clave)) % hash->capacidad;
 	size_t i = pos;
 	while (true){
 		// printf("%i %i %i\n",i,pos, hash->capacidad );
@@ -170,21 +165,19 @@ hash_t *hash_crear(hash_destruir_dato_t destruir_dato){
 	hash->capacidad = LARGO_I;
 	hash->cantidad = 0;
 	hash->destruir = destruir_dato;
-	
-	campo_t* arreglo = malloc(sizeof(campo_t)*LARGO_I);
+	hash->ocupado = 0;
+	campo_t* arreglo = calloc(3,sizeof(campo_t)*LARGO_I);
 	
 	if (!arreglo){
 		free(hash);
 		return NULL;
-	}
-	
-	if(!pedir_campos(arreglo,LARGO_I)) return NULL;	
+	}	
 	hash->arr = arreglo;
 	return hash;
 }
 
 bool hash_guardar( hash_t *hash, const char *clave, void *dato){
-	if((hash->cantidad + 1) *10 / hash->capacidad >= 7){
+	if((hash->ocupado + 1) *10 / hash->capacidad >= MAX_C){
 		if(!hash_redimensionar(hash,(hash->capacidad)*2 )) return false;
 	}
 	const hash_t* A = hash;
@@ -199,20 +192,21 @@ bool hash_guardar( hash_t *hash, const char *clave, void *dato){
 		hash->arr[pos].valor = dato;
 		hash->arr[pos].estado = ocupado;
 		hash->cantidad++;
+		hash->ocupado++;
+
 	}
-	else{ 
+	else { 
 		if(hash->destruir != NULL){
 			hash->destruir(hash->arr[pos].valor); 
 		}
 		hash->arr[pos].valor = dato;
 		hash->arr[pos].estado = ocupado;
 	}
-	
 	return true;
 }
 
 void *hash_obtener(const hash_t *hash, const char *clave){
-	size_t pos = (size_t)hash_buscar(hash,clave);
+	size_t pos = hash_buscar(hash,clave);
 	if(hash->arr[pos].estado != ocupado){
 		return NULL;
 	}
@@ -220,7 +214,7 @@ void *hash_obtener(const hash_t *hash, const char *clave){
 }
 
 bool hash_pertenece(const hash_t *hash, const char *clave){
-	size_t pos = (size_t)hash_buscar(hash,clave);
+	size_t pos = hash_buscar(hash,clave);
 	if (hash->arr[pos].estado == ocupado){
 		return true;
 	}
@@ -237,21 +231,17 @@ void *hash_borrar(hash_t *hash, const char *clave){
 	if (hash->arr[pos].estado != ocupado){
 		return NULL;
 	}
-	if ((hash->capacidad >= LARGO_I) && ((hash->capacidad)*10/hash->cantidad <= 1)){
-		if (hash_redimensionar(hash, hash->capacidad/2)){}
-		else{
-			return NULL;
-		}
+	if ((hash->capacidad >= LARGO_I) && ((hash->ocupado)*10/hash->capacidad <= MIN_C)){
+		hash_redimensionar(hash, hash->capacidad/2);
+		pos = hash_buscar(hash,clave);
 	}
 	free((char*)hash->arr[pos].clave);
 	hash->arr[pos].clave = NULL;
 	hash->arr[pos].estado = borrado;
 	void* rta = hash->arr[pos].valor;
 	hash->arr[pos].valor = NULL;
-	
-	if(hash->cantidad >0){
-		hash->cantidad --;
-	}
+
+	hash->cantidad --;
 	
 	return rta;
 }
@@ -321,7 +311,7 @@ const char* hash_iter_ver_actual(const hash_iter_t* iter){
 
 // Comprueba si terminó la iteración
 bool hash_iter_al_final(const hash_iter_t* iter){
-	if (iter->pos >= iter->hash->capacidad || iter->hash->cantidad == 0){
+	if (iter->pos >= iter->hash->capacidad){
 		return true;
 	}
 	return false;
