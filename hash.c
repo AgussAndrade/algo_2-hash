@@ -7,7 +7,6 @@
 #include <string.h>
 #include "hash.h"
 
-#define _POSIX_C_SOURCE
 #define LARGO_I 37
 #define MAX_C 7
 #define MIN_C 1 
