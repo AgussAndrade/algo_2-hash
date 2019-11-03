@@ -114,8 +114,20 @@ void downheap(void** arr,cmp_func_t cmp,size_t inicio,size_t act,size_t final){
 	}
 	return;	
 }
-void heap_sort(void *elementos[], size_t cant, cmp_func_t cmp);
+void heap_sort(void *elementos[], size_t cant, cmp_func_t cmp){
+	heapify(elementos,cant,cmp);
+	for (int i = cant;i>0;i--){
+		swap(elementos,0,i-1);
+		downheap(elementos,cmp,0,0,i);
+	}
 
+}
+void heapify (void** arr,size_t cant,cmp_func_t cmp){
+	for (int i = cant;i>=0;i--){
+		downheap(aux,0,i-1,cant);
+	}
+
+}
 heap_t *heap_crear_arr(void *arreglo[], size_t n, cmp_func_t cmp){
 	heap_t* heap = malloc(sizeof(heap_t));
 	if(!heap) return NULL;
@@ -124,10 +136,7 @@ heap_t *heap_crear_arr(void *arreglo[], size_t n, cmp_func_t cmp){
 		free(heap);
 		return NULL;
 	}
-	for (int i = 0; i<n;i++){
-		aux[i] = arreglo[i];
-	}
-	heap_sort(aux,n,cmp);
+	heapify(aux,n,cmp);
 	heap->cantidad = n;
 	heap->capacidad = n*2;
 	heap->arr = aux;
