@@ -31,6 +31,8 @@ void upheap (void** arr,cmp_func_t cmp,size_t inicio,size_t act,size_t final){
 	size_t i = act;
 	while (i > inicio){
 		size_t padre = ob_padre(i);
+		// printf("inicio %i -- act %i -- final  %i -- padre %i\n",inicio,i,final,padre );
+
 		if (padre <inicio) return;
 		if (cmp(arr[i],arr[padre])>0){
 			swap(arr,i,padre);
@@ -41,8 +43,9 @@ void upheap (void** arr,cmp_func_t cmp,size_t inicio,size_t act,size_t final){
 	return;
 }
 void downheap(void** arr,cmp_func_t cmp,size_t inicio,size_t act,size_t final){
-	if (act < inicio || act >= final) return;
+	if (act < inicio || act >= final || inicio == final) return;
 	size_t i = act;
+
 	while (i < final){
 		size_t hijo_d = ob_hijo_d(i);
 		size_t hijo_i = ob_hijo_i(i);
@@ -71,6 +74,7 @@ void downheap(void** arr,cmp_func_t cmp,size_t inicio,size_t act,size_t final){
 				i = hijo_i;
 				continue;
 			}
+			return;
 		}
 		else return;
 
@@ -116,8 +120,12 @@ heap_t *heap_crear(cmp_func_t cmp){
 	return heap;
 }
 bool redimensionar (heap_t* heap,size_t num){
-	void** arreglo = realloc(heap->arr,num);
+	void** arreglo = realloc(heap->arr,sizeof(void*)*num);
 	if (!arreglo) return false;
+	for (size_t i = heap->cantidad;i<num;i++){
+		// printf("%i i\n",i );
+		arreglo[i] = NULL;
+	}
 	heap->arr = arreglo;
 	heap->capacidad = num;
 	return true;
@@ -127,10 +135,12 @@ size_t heap_cantidad(const heap_t* heap){
 }
 bool heap_encolar(heap_t *heap, void *elem){
 	if (heap->cantidad +1 >= heap->capacidad){
-		if (!redimensionar(heap,heap->capacidad * 2)) return false;
+		bool rta = redimensionar(heap,heap->capacidad*2);
+		// printf("%i capac\n", heap->capacidad);
+		if (!rta) return false;
 	}
 	heap->arr[heap->cantidad] = elem;
-	upheap(heap->arr,heap->cmp,0,heap->cantidad,heap->cantidad);
+	upheap(heap->arr,heap->cmp,0,heap->cantidad,heap->cantidad+1);
 	heap->cantidad++;
 	return true;
 }
@@ -149,10 +159,12 @@ void heap_sort(void *elementos[], size_t cant, cmp_func_t cmp){
 
 void heap_destruir(heap_t *heap, void destruir_elemento(void *e)){
 	void** arr = heap->arr;
-	size_t i = 0;
-	while(i<heap->cantidad){
-		destruir_elemento(arr[i]);
-		i++;
+	if(destruir_elemento){
+		size_t i = 0;
+		while(i<heap->cantidad){
+			destruir_elemento(arr[i]);
+			i++;
+		}
 	}
 	free(arr);
 	free(heap);
@@ -164,14 +176,21 @@ bool heap_esta_vacio(const heap_t *heap){
 }
 
 void *heap_desencolar(heap_t *heap){
-	if((heap->capacidad >= CAP_I) && ((heap->capacidad) /4 >= heap->cantidad)){
+	if((heap->cantidad >= CAP_I) && ((heap->capacidad) /4 >= heap->cantidad)){
 		redimensionar(heap,heap->capacidad / 2);
 	}
 	if (heap_esta_vacio(heap)) return NULL;
+	if (heap->cantidad == 1){
+		void* elem = heap->arr[0];
+		heap->arr[0] = NULL;
+		heap->cantidad = 0;
+		return elem;
+	}
+	// printf("%i\n",heap->cantidad );
 	void* elem = heap->arr[0];
 	swap(heap->arr,0,heap->cantidad -1);
+	heap->arr[heap->cantidad -1] = NULL;
 	heap->cantidad--;
-	heap->arr[heap->cantidad] = NULL;
 	downheap(heap->arr,heap->cmp,0,0,heap->cantidad);
 	return elem;
 }
