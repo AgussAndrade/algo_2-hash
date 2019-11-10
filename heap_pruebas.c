@@ -93,7 +93,7 @@ void prueba_destruccion_heap_NULL() {
 	print_test("El heap ha sido destruido correctamente",true);
 }
 
-void prueba_destruccion_lista_free() {
+void prueba_destruccion_heap_free() {
 	heap_t* heap = heap_crear(cmp_func);
 	int* elemento1 = malloc(sizeof(int));
 	int* elemento2 = malloc(sizeof(int));
@@ -102,8 +102,8 @@ void prueba_destruccion_lista_free() {
 	print_test("Se encolo el elemento1",heap_encolar(heap,elemento1) == true);
 	print_test("Se encolo el elemento2",heap_encolar(heap,elemento2) == true);
 	print_test("Se encolo el elemento3",heap_encolar(heap,elemento3) == true);
-	lista_destruir(lista,free);
-	print_test("La lista fue destruida correctamente",true);
+	heap_destruir(heap,free);
+	print_test("El heap fue destruido correctamente",true);
 }
 void pruebas_heap_alumno(){
 	pruebas_heap_vacio();
