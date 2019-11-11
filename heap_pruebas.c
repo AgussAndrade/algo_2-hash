@@ -13,9 +13,25 @@
  *   mayor a 0  si  a > b
  */
 int cmp_func(const void *a, const void *b){
-	if (*(int*)a < *(int*)b) return -1;
-	if (*(int*)a == *(int*)b) return 0;
+	if (*(int*)a < *(int*)b ) return -1;
+	if (*(int*)a == *(int*)b ) return 0;
 	return 1;
+}
+
+void** arreglo(){
+	void** arr = malloc(sizeof(void*) * 5);
+	int* n4 = malloc(sizeof(int));
+	int* n2 = malloc(sizeof(int));
+	int* n9 = malloc(sizeof(int));
+	int* n1 = malloc(sizeof(int));
+	int* n20 = malloc(sizeof(int));
+	*n4 = 4, *n2 = 2, *n9 = 9, *n1 = 1, *n20 = 20;
+	arr[0] = n4;
+	arr[1] = n2;
+	arr[2] = n9;
+	arr[3] = n1;
+	arr[4] = n20;
+	return arr;
 }
 
 void pruebas_heap_vacio(){
@@ -105,11 +121,54 @@ void prueba_destruccion_heap_free() {
 	heap_destruir(heap,free);
 	print_test("El heap fue destruido correctamente",true);
 }
+
+void prueba_crear_arr(){
+	void** arr = arreglo();
+	heap_t* elem_a_borrar = heap_crear(cmp_func);
+	for(size_t i = 0; i < 5; i++){
+		heap_encolar(elem_a_borrar,arr[i]);
+	}
+	heap_t* heap = heap_crear_arr(arr,5,cmp_func);
+	print_test("El max del heap es 20",*(int*)heap_ver_max(heap) == 20);
+	print_test("Desencolo",*(int*)heap_desencolar(heap) == 20);
+	print_test("El max del heap es 9",*(int*)heap_ver_max(heap) == 9);
+	print_test("Desencolo",*(int*)heap_desencolar(heap) == 9);
+	print_test("El max del heap es 4",*(int*)heap_ver_max(heap) == 4);
+	print_test("Desencolo",*(int*)heap_desencolar(heap) == 4);
+	print_test("El max del heap es 2",*(int*)heap_ver_max(heap) == 2);
+	print_test("Desencolo",*(int*)heap_desencolar(heap) == 2);
+	print_test("El max del heap es 1",*(int*)heap_ver_max(heap) == 1);
+	print_test("Desencolo",*(int*)heap_desencolar(heap) == 1);
+	print_test("El max del heap es NULL",heap_ver_max(heap) == NULL);
+	heap_destruir(elem_a_borrar,free);
+	heap_destruir(heap,NULL);
+	print_test("El heap se destruyo correctamente",true);
+}
+
+void prueba_heapsort(){
+	void** arr = arreglo();
+	bool esta_bien = true;
+	heap_sort(arr ,5,cmp_func);
+	for(int i = 0; i < 4 ; i ++){
+		if(*(int*)arr[i] > *(int*)arr[i+1]){
+			esta_bien = false;
+			break;
+		}
+	print_test("Se ordeno bien",esta_bien);
+	}
+	for(int j = 0 ; j < 5; j++ ){
+		free(arr[j]);
+	}
+	free(arr);
+}
+
 void pruebas_heap_alumno(){
 	pruebas_heap_vacio();
 	pruebas_comportamiento_heap();
 	prueba_volumen();
 	prueba_destruccion_heap_NULL();
 	prueba_destruccion_heap_free();
+	prueba_crear_arr();
+	prueba_heapsort();
 
 }
