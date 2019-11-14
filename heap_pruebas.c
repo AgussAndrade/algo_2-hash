@@ -3,6 +3,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 /* Prototipo de función de comparación que se le pasa como parámetro a las
  * diversas funciones del heap.
@@ -75,13 +76,13 @@ void pruebas_comportamiento_heap() {
 void prueba_volumen (){
 	heap_t* heap = heap_crear(cmp_func);
 	int j;
-	int* vector = malloc(sizeof(int) * 1000);
-	for (int i = 0; i != 1000 ;i++){
+	int* vector = malloc(sizeof(int) * 10000);
+	for (int i = 0; i != 10000 ;i++){
 		vector[i] = i;
 		heap_encolar(heap,&vector[i]);
 	}
-	print_test("La cantidad en el heap es 1000",heap_cantidad(heap) == 1000);
-	for (j = 999; j >= 0 ;j--){
+	print_test("La cantidad en el heap es 1000",heap_cantidad(heap) == 10000);
+	for (j = 9999; j >= 0 ;j--){
 		bool desencolo_bien = *(int*)heap_desencolar(heap) == j;
 		if (desencolo_bien == false){
 			print_test("No se pudo desencolar correctamente", false);
@@ -91,11 +92,40 @@ void prueba_volumen (){
 			print_test("Fallo la cantidad del heap", false);
 		}
 	}
-	print_test("Encolar y desencolar 1000 elementos",heap_esta_vacio(heap));
+	print_test("Encolar y desencolar 10000 elementos",heap_esta_vacio(heap));
 	heap_destruir(heap,NULL);
 	free(vector);
 }
 
+int _strcmp(const void* a,const void* b){
+	return strcmp((char*) a,(char*) b);
+}
+
+void prueba_volumen_iguales(){
+	heap_t* heap = heap_crear(_strcmp);
+	char* cadenas[] = {"aaaa","abab","acac","adad","afaf","agag","amam","axax","azaz"};
+	for (int i = 0; i < 800;i++){
+		heap_encolar(heap,cadenas[i%8]);
+	}
+	int contar = 799;
+	while(!heap_esta_vacio(heap)){
+
+		int actual = 0;
+		if (contar >= 700) actual = 7;
+		else if (contar >= 600) actual = 6;
+		else if (contar >= 500) actual = 5;
+		else if (contar >= 400) actual = 4;
+		else if (contar >= 300) actual = 3;
+		else if (contar >= 200) actual = 2;
+		else if (contar >= 100) actual = 1;
+		bool desencolo_bien = (char*)heap_desencolar(heap) == cadenas[actual];
+		if (desencolo_bien == false){
+			print_test("No se pudo desencolar correctamente", false);
+		}
+		contar--;
+	}
+	heap_destruir(heap,NULL);
+}
 void prueba_destruccion_heap_NULL() {
 	heap_t* heap = heap_crear(cmp_func);
 	int valor1 = 1, valor2 = 2, valor3 = 3;
@@ -114,10 +144,17 @@ void prueba_destruccion_heap_free() {
 	int* elemento1 = malloc(sizeof(int));
 	int* elemento2 = malloc(sizeof(int));
 	int* elemento3 = malloc(sizeof(int));
-	*elemento1 = 1, *elemento2 = 2, *elemento3 = 3;
-	print_test("Se encolo el elemento1",heap_encolar(heap,elemento1) == true);
+	int* elemento4 = malloc(sizeof(int));
+	int* elemento5 = malloc(sizeof(int));
+	int* elemento6 = malloc(sizeof(int));
+	*elemento1 = 1, *elemento2 = 2, *elemento3 = 4, *elemento4 = 4, *elemento5 = 5, *elemento6 = 6;
 	print_test("Se encolo el elemento2",heap_encolar(heap,elemento2) == true);
 	print_test("Se encolo el elemento3",heap_encolar(heap,elemento3) == true);
+	print_test("Se encolo el elemento5",heap_encolar(heap,elemento5) == true);
+	print_test("Se encolo el elemento6",heap_encolar(heap,elemento6) == true);
+	print_test("Se encolo el elemento1",heap_encolar(heap,elemento1) == true);
+	print_test("Se encolo el elemento4",heap_encolar(heap,elemento4) == true);
+	print_test("El máximo es 6",*(int*)heap_ver_max(heap) == 6);
 	heap_destruir(heap,free);
 	print_test("El heap fue destruido correctamente",true);
 }
@@ -143,19 +180,20 @@ void prueba_crear_arr(){
 	heap_destruir(elem_a_borrar,free);
 	heap_destruir(heap,NULL);
 	print_test("El heap se destruyo correctamente",true);
+	free(arr);
 }
 
 void prueba_heapsort(){
 	void** arr = arreglo();
 	bool esta_bien = true;
-	heap_sort(arr ,5,cmp_func);
+	heap_sort(arr ,5 ,cmp_func);
 	for(int i = 0; i < 4 ; i ++){
 		if(*(int*)arr[i] > *(int*)arr[i+1]){
 			esta_bien = false;
 			break;
 		}
-	print_test("Se ordeno bien",esta_bien);
 	}
+	print_test("Se ordeno bien",esta_bien);
 	for(int j = 0 ; j < 5; j++ ){
 		free(arr[j]);
 	}
@@ -170,5 +208,5 @@ void pruebas_heap_alumno(){
 	prueba_destruccion_heap_free();
 	prueba_crear_arr();
 	prueba_heapsort();
-
+	prueba_volumen_iguales();
 }
