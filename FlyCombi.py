@@ -8,7 +8,7 @@ from funciones_tp import*
 PARAMETROS_COMANDOS = sys.stdin
 PARAMETROS = sys.argv[1:]
 LARGO_PARAMETROS = len(PARAMETROS)
-OPERACIONES = {'camino_mas' :0,'camino_escalas':1,'centralidad_aprox':3,'centralidad':2,'pagerank':4,'nueva_aerolinea':5,'recorrer_mundo':6,'recorrer_mundo_aprox':7,'vacaciones':8,'itinerario':9,'exportar_kml':10}
+OPERACIONES = {'camino_mas' :0,'camino_escalas':1,'centralidad_aprox':3,'centralidad':2,'pagerank':4,'nueva_aerolinea':5,'recorrer_mundo':6,'recorrer_mundo_aprox':7,'vacaciones':8}
 NO_PERTENECE_OPERACIONES = 'NO_PERTENECE_OPERACIONES'
 ER_CARPETA = 'ER_CARPETA'
 ERROR_CENTRALIDAD_APROX = 'ERROR_CENTRALIDAD_APROX'
@@ -80,15 +80,15 @@ def envolver_comandos(aeropuertos,vuelos):
 		elif valor== 2:
 			centralidad(vuelos,int(comandos_validos[0]))
 		elif valor==3:
-			centralidad_aprox(vuelos,int(comandos_validos[0]),300,10)
+			centralidad_aprox(vuelos,int(comandos_validos[0]),300,20)
 		elif valor ==4:
-			pagerank(nueva_aerolinea(aeropuertos,vuelos,comandos_validos[0]))
+			pagerank(vuelos,int(comandos_validos[0]),5)
 		elif valor==5:
 			nueva_aerolinea(aeropuertos,vuelos,comandos_validos[0])
 		elif valor == 6:
 			recorrer_mundo(aeropuertos,vuelos,comandos_validos[0])
 		elif valor == 7:
-			recorrer_mundo_aprox(aeropuertos,vuelos,comandos_validos[0],int(comandos_validos[1]))
+			recorrer_mundo_aprox(aeropuertos,vuelos,comandos_validos[0])
 		if valor == 8:
 			vacaciones(aeropuertos,vuelos,comandos_validos[0],int(comandos_validos[1]))
 

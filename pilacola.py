@@ -12,7 +12,7 @@ class Cola:
 	def encolar(self,dato):
 		nuevo_nodo = _Nodo(dato)
 		if self.ultimo is not None:
-			self.utimo.prox = nuevo_nodo
+			self.ultimo.prox = nuevo_nodo
 			self.ultimo = nuevo_nodo
 		else:
 			self.prim = nuevo_nodo
@@ -40,9 +40,11 @@ class Pila:
 	def	desapilar(self):
 		dato = self.ult.dato
 		self.ult = self.ult.prox
+		return dato
 	def esta_vacia(self):
 		return self.ult == None
-
+	def ver_tope(self):
+		return self.ult.dato
 def obtener_padre(pos):
 	return (pos -1 )//2
 def ob_hijo_i(pos):
@@ -58,13 +60,14 @@ def upheap(arr,inicio,act,final):
 	i = act
 	while i > inicio:
 		padre = obtener_padre(i)
+		if padre < inicio:return
 		if arr[i][0] < arr[padre][0]:
 			swap(arr,i,padre)
 			i = padre
 		else: return
 	return
 def downheap(arr,inicio,act,final):
-	if act< inicio or act >= final : return
+	if act< inicio or act >= final or inicio == final : return
 	i = act
 	while i < final:
 		hijo_d = ob_hijo_d(i)
@@ -79,17 +82,17 @@ def downheap(arr,inicio,act,final):
 				i = aux
 				continue
 			else: return
-		if hijo_d < final:
+		elif hijo_d < final:
 			if arr[hijo_d][0] < arr[i][0]:
 				swap(arr,i,hijo_d)
 				i = hijo_d
 				continue
-			return
 		elif hijo_i < final:
 			if arr[hijo_i][0] < arr[i][0]:
 				swap(arr,i,hijo_i)
 				i = hijo_i
 				continue
+			return
 		else: return
 	return
 class Heap:
@@ -106,7 +109,7 @@ class Heap:
 		if self.esta_vacio(): return None
 		elem = self.arr[0]
 		swap(self.arr,0,self.cant -1)
-		self.arr.pop(self.cantidad -1)
+		self.arr.pop(self.cant -1)
 		self.cant -=1
 		downheap(self.arr,0,0,self.cant)
 		return elem
@@ -122,17 +125,17 @@ def quicksort(lista):
 	return quicksort(i) + [m] + quicksort(d)
 def partir(lista,fin):
 	pivote = lista[0]
-	i = []
+	izq = []
 	d = []
 	i =1
 	while i <= fin:
 		if lista[i][1] < pivote[1]:
-			i.append(lista[i])
+			izq.append(lista[i])
 			i +=1
 		else:
 			d.append(lista[i])
 			i +=1
-	return i,pivote,d
+	return izq,pivote,d
 def merge_sort(lista):
 	if len(lista) <2:
 		return lista
@@ -145,12 +148,12 @@ def merge(l1,l2):
 	i,j=0,0
 	resultado =[]
 	while(i<len(l1)and j<len(l2)):
-		if(l1[i][1] > l2[i][1]):
+		if(l1[i][1] < l2[i][1]):
 			resultado.append(l1[i])
 			i+=1
 		else:
 			resultado.append(l2[i])
 			j+=1
 	resultado += l1[i:]
-	resultado+= l2[j:]
+	resultado += l2[j:]
 	return resultado

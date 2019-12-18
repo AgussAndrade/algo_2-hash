@@ -23,7 +23,7 @@ def camino_mas(formato,aeropuertos,vuelos,desde,hasta):
 	codigos_validos = []
 	padres ={}
 	dist = {}
-	menos = float('inf')
+	menor = float('inf')
 	a_utilizar = ''
 	for datos_hasta in aeropuertos[hasta]:
 		codigos_validos.append(datos_hasta[1])
@@ -34,6 +34,7 @@ def camino_mas(formato,aeropuertos,vuelos,desde,hasta):
 				menor = dist_aux[aeropuerto_hasta]
 				dist = dist_aux
 				padres = padres_aux
+				a_utilizar = aeropuerto_hasta
 	pila = Pila()
 	while a_utilizar != None:
 		pila.apilar(a_utilizar)
@@ -51,7 +52,7 @@ def camino_escalas(aeropuertos,vuelos,desde,hasta):
 	codigos_validos = []
 	padres = {}
 	orden = {}
-	menos = float('inf')
+	menor = float('inf')
 	a_utilizar = ''
 	for datos_hasta in aeropuertos[hasta]:
 		codigos_validos.append(datos_hasta[1])
@@ -62,6 +63,7 @@ def camino_escalas(aeropuertos,vuelos,desde,hasta):
 				menor = dist_aux[aeropuerto_hasta]
 				dist = dist_aux
 				padres = padres_aux
+				a_utilizar = aeropuerto_hasta
 	pila = Pila()
 	while a_utilizar != None:
 		pila.apilar(a_utilizar)
@@ -73,7 +75,7 @@ def camino_escalas(aeropuertos,vuelos,desde,hasta):
 	print()
 	return
 def centralidad (vuelos,formato):
-	cent = grafo_centralidad(vuelos)
+	cent = grafo_centralidad(vuelos,2)
 	minimos = Heap()
 	contador = 0
 	for codigo,tam in cent.items():
@@ -84,14 +86,15 @@ def centralidad (vuelos,formato):
 		if tam > minimos.ver_min()[0]:
 			minimos.desencolar()
 			minimos.encolar((tam,codigo))
-		pila = Pila()
-		while not minimos.esta_vacio():
-			pila.apilar(minimos.desencolar()[1])
-		while not pila.esta_vacia():
-			print(pila.desapilar(),end = '')
-			if not pila.esta_vacia():
-				print(', ',end = '')
-		print()
+	pila = Pila()
+	while not minimos.esta_vacio():
+		pila.apilar(minimos.desencolar()[1])
+	while not pila.esta_vacia():
+		print(pila.desapilar(),end = '')
+		if not pila.esta_vacia():
+			print(', ',end = '')
+	print()
+	return
 def centralidad_aprox(grafo,formato,largo,recorridos):
 	heap = Heap()
 	apariciones = {}
@@ -124,7 +127,7 @@ def centralidad_aprox(grafo,formato,largo,recorridos):
 	while not heap.esta_vacio():
 		pila.apilar(heap.desencolar()[1])
 	while not pila.esta_vacia():
-		print(pila.desencolar(),end  = '')
+		print(pila.desapilar(),end  = '')
 		if not pila.esta_vacia():
 			print(', ',end = '')
 	print()
@@ -167,10 +170,10 @@ def pagerank(grafo,cantidad,iteraciones):
 def nueva_aerolinea(aeropuertos,vuelos,archivo_a_escribir):
 	try:
 		with open(archivo_a_escribir,'w',encoding = 'utf8') as archivo:
-			arbol_a_escribir = mst_prim(vuelos,None,0)
+			arbol_a_escribir = mst_prim(vuelos,None,1)
 			visitados = set()
 			for v in arbol_a_escribir.obtener_vertices():
-				for w in arbol_a_escribir.adyacentes():
+				for w in arbol_a_escribir.adyacentes(v):
 					if not (v,w) in visitados and(w,v) not in visitados:
 						visitados.add((v,w))
 						arr_a_escribir = [v,w] + vuelos.ver_peso(v,w)
@@ -191,9 +194,11 @@ def _vacaciones(vuelos,desde,actual,rta,visitados,cant_visitados,cantidad):
 			cant_visitados +=1
 			if(_vacaciones(vuelos,desde,v,rta,visitados,cant_visitados,cantidad)):
 				return True
-			rta.pop()
-			visitados.remove(v)
-			cant_visitados -=1
+			else:
+				rta.pop()
+				visitados.remove(v)
+				cant_visitados -=1
+	return False
 def vacaciones(aeropuertos,vuelos,desde,cantidad):
 	if not desde in aeropuertos:
 		print(ERROR_VACACIONES)
@@ -209,8 +214,8 @@ def vacaciones(aeropuertos,vuelos,desde,cantidad):
 			largo_rta = len(rta)
 			for i in range(largo_rta):
 				print(f'{rta[i]} -> ',end = '')
-				print(rta[0])
-				return
+			print(rta[0])
+			return
 		else:
 			rta.pop()
 			visitados.remove(codigo)
@@ -268,7 +273,7 @@ def recorrer_mundo_aprox(aeropuertos,vuelos,desde):
 		return
 	rta = []
 	valor = [0]
-	visitado = set()
+	visitados = set()
 	cant_visitados = 0
 	for codigos in aeropuertos[desde]:
 		codigo = codigos[1]
@@ -288,4 +293,67 @@ def recorrer_mundo_aprox(aeropuertos,vuelos,desde):
 			cant_visitados -=1
 			visitados.remove(codigo)
 	print('no se encontro camino')
+	return
+def _recorrer_mundo(vuelos,actual,rta_actual,valor_actual,visitados,cant_visitados,valor_mejor,heap):
+	if valor_actual[0] > valor_mejor[0] or len(rta_actual) >1000:
+		return
+	if len(vuelos) == cant_visitados and valor_actual[0] < valor_mejor[0]:
+		valor_mejor[0] = valor_actual[0]
+		heap.encolar((valor_actual[0],rta_actual[:]))
+		return
+	for v in vuelos.adyacentes(actual):
+		pertenece = v not in visitados
+		rta_actual.append(v)
+		valor_actual[0] += int(vuelos.ver_peso(actual,v)[0])
+		if v not in visitados:
+			visitados.add(v)
+			cant_visitados+=1
+		_recorrer_mundo(vuelos,v,rta_actual,valor_actual,visitados,cant_visitados,valor_mejor,heap)
+		if pertenece:
+			visitados.remove(v)
+			cant_visitados-=1
+		rta_actual.pop()
+		valor_actual[0] -= int(vuelos.ver_peso(actual,v)[0])
+	return
+def recorrer_mundo(aeropuertos,vuelos,desde):
+	if not desde in aeropuertos:
+		print(ERROR_RECORRER_MUNDO_APROX)
+		return
+	rta_mejor = []
+	valor_mejor = [0]
+	visitados = set()
+	cant_visitados = 0
+	for codigos in aeropuertos[desde]:
+		codigo = codigos[1]
+		visitados.add(codigo)
+		cant_visitados +=1
+		if(_recorrer_mundo_aprox(vuelos,codigo,rta_mejor,valor_mejor,visitados,cant_visitados)):
+			break
+		else:
+			cant_visitados -=1
+			visitados.remove(codigo)
+	if rta_mejor == []:
+		print('no existe una solucion')
+	visitados = set()
+	rta = []
+	valor_actual = [0]
+	cant_visitados = 0
+	heap = Heap()
+	heap.encolar((valor_mejor[0],rta_mejor))
+	for codigos in aeropuertos[desde]:
+		codigo = codigos[1]
+		visitados.add(codigo)
+		cant_visitados+=1
+		_recorrer_mundo(vuelos,codigo,rta,valor_actual,visitados,cant_visitados,valor_mejor,heap)
+		visitados.remove(codigo)
+		cant_visitados-=1
+	valor_mejor,rta_mejor = heap.desencolar()
+	print(f'{codigo} -> ',end='')
+	largo = len(rta_mejor)
+	for i in range(largo):
+		print(f'{rta_mejor[i]} ',end = '')
+		if i < largo -1:
+			print('-> ',end = '')
+	print()
+	print(valor_mejor)
 	return

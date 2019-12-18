@@ -9,3 +9,7 @@ vacaciones Pueblo Paleta,7
 nueva_aerolinea MiAvioncito.csv
 pagerank 3
 vacaciones Pueblo Paleta,7
+recorrer_mundo_aprox Lanus
+recorrer_mundo_aprox Pueblo Paleta
+recorrer_mundo Lanus
+recorrer_mundo Gotica

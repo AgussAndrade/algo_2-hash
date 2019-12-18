@@ -41,7 +41,7 @@ class Grafo:
 		return False
 	def adyacentes(self,vertice):
 		if vertice in self.vertices:
-			return self.vertices[vertice]
+			return self.vertices[vertice].keys()
 		return None
 	def ver_peso(self,v_salida,v_llegada):
 		if v_salida in self.vertices and v_llegada in self.vertices:
@@ -52,7 +52,7 @@ class Grafo:
 			return True
 		return False
 	def obtener_vertice_azar(self):
-		for vertice in self.vertices.key(): return vertice
+		for vertice in self.vertices.keys(): return vertice
 	def obtener_vertices(self):
 		return self.vertices.keys()
 	def __len__(self):
